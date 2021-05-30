@@ -1,0 +1,28 @@
+{
+  "name": "sample-infra-v2",
+  "version": "2.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Test target\"",
+    "server": "node bin/backend.js",
+    "curl": "curl -d '{\"username\":\"test\",\"password\":\"pass\"}' http://localhost:8000/login",
+    "client": "node bin/client.js -l Green36 -p f9WhlutWKR42kKH -t 1",
+    "rabbitmq_docker": "docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3-management",
+    "rabbitmq_receiver": "node bin/receiver.js",
+    "rabbitmq_sender": "node bin/sender.js"
+  },
+  "author": "",
+  "license": "GPLv3",
+  "dependencies": {
+    "amqplib": "^0.7.1",
+    "argparse": "^2.0.1",
+    "axios": "^0.21.1",
+    "body-parser": "^1.19.0",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "faker": "^5.5.3",
+    "jsonschema": "^1.4.0",
+    "jsonwebtoken": "^8.5.1"
+  }
+}
