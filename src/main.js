@@ -8,7 +8,7 @@ var validate = require('jsonschema').validate;
 var amqp = require('amqplib/callback_api');
 const userFile = require("./authdb");
 
-const {routeur} = require("src/routeur")
+const {routeur} = require("./routeur")
 
 
 const IP = process.env.IP || "127.0.0.1";
@@ -24,9 +24,6 @@ const port = 8000;
 const ACCESS_TOKEN_SECRET = "123456789";
 const ACCESS_TOKEN_LIFE = 1200;
 
-var q = 'tasks';
-
-var open = require('amqplib').connect('amqp://localhost');
 
 function login(data,res) {
     console.log("login");
@@ -64,6 +61,7 @@ function login(data,res) {
     }
 }
 
+
 function postdata(data,res,channel,queue) {
     console.log("Post Data",data);
     // Check JWT validity
@@ -91,7 +89,6 @@ function postdata(data,res,channel,queue) {
 }
 
 
-
 /**
  *
  * Occur when an unkown url was called
@@ -103,31 +100,10 @@ function f404(data,res) {
     res.end(JSON.stringify({"error":-1,"message":"404"}));
 }
 
-function connectToRabbit(f){
-
-    amqp.connect('amqp://' + IP, opt, function (error0, connection) {
-
-        if (error0) {
-            throw error0;
-        }
-
-        connection.createChannel(function(error1, channel) {
-            if (error1) {
-                throw error1;
-            }
-
-            const queue = "from_backend";
-
-            channel.assertQueue(queue, {
-                durable: true
-            });
-
-            f(channel,queue);
-        });
-    });
-
+function bail(err) {
+    console.error(err);
+    process.exit(1);
 }
-
 
 function sendData(data,channel,queue) {
 
@@ -167,15 +143,31 @@ function runExpress(channel,queue) {
     });
 }
 
+function consumer(amqp_connection){
+
+    amqp_connection.createChannel(function(error1, channel) {
+        if (error1) {
+            throw error1;
+        }
+
+        const queue = "from_backend";
+
+        channel.assertQueue(queue, {
+            durable: true
+        });
+        runExpress(channel,queue);
+    });
+}
+
 function run(){
+
     require('amqplib/callback_api')
-        .connect('amqp://localhost', function(err, conn) {
+        .connect('amqp://' + IP, opt, function(err, conn) {
             if (err != null) bail(err);
             consumer(conn);
-            publisher(conn);
+            routeur(conn,"from_backend");
         });
-    connectToRabbit(runExpress);
-    routeur(runExpress());
+
 }
 
 
