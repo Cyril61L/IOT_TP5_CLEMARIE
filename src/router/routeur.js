@@ -1,24 +1,20 @@
 require('dotenv').config();
 
-const {check_code} = require('./authdb')
-const {get_queue, code_valid} = require("./routingdb")
-const userFile = require("./authdb");
-//var amqp = require('amqplib/callback_api');
 
-//const IP = process.env.IP || "127.0.0.1";
-//const username = process.env.username || 'guest';
-//const password = process.env.password || 'guest';
+const {get_queue, code_valid} = require("../db/routingdb")
+const userFile = require("../db/authdb");
+
+
 
 function checkValidQueue(code, username){
 
     const found = userFile.userTab.find(user => user.username === username);
     const check = found.authorizedQueues.includes(code);
 
-    if(check)  console.log("Trafic valide")
+    if(check)  console.log("Trafic valide \n")
     else console.log("Trafic illégale")
 
     return check;
-
 }
 
 function routeur(amqp_connection, queue){
@@ -34,7 +30,7 @@ function routeur(amqp_connection, queue){
 
         channel.consume(queue, function(msg) {
             const data = JSON.parse(msg.content.toString())
-            console.log(" Routeur reçoit ", msg.content.toString());
+            console.log(" Routeur receive %s \n", msg.content.toString());
 
             const valid = checkValidQueue(parseInt(data.destinataire), data.username);
 
@@ -44,7 +40,11 @@ function routeur(amqp_connection, queue){
                 channel.assertQueue(queue, {
                     durable: true
                 });
-                channel.sendToQueue(queue, Buffer.from(data.toString()));
+
+                channel.sendToQueue(queue, Buffer.from(JSON.stringify({
+                    client : data.username,
+                    data : data.data
+                })));
             }
 
 

@@ -45,7 +45,7 @@ function apply_command(cmd) {
   action performed each 30 seconds
 */
 function action(jwt) {
-    axios.post("http://localhost:8000/pushdata",{jwt:jwt,data:{complexdata:'ok'}})
+    axios.post("http://localhost:8000/pushdata",{jwt:jwt,data:{complexdata:'data du capteur'}})
         .then(function(d) {
             console.log("POSTDATA",d.data);
         })

@@ -5,10 +5,10 @@ const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 const schemas = require("./schemas");
 var validate = require('jsonschema').validate;
-var amqp = require('amqplib/callback_api');
-const userFile = require("./authdb");
+const userFile = require("./db/authdb");
 
-const {routeur} = require("./routeur")
+const {routeur} = require("./router/routeur")
+const {afficheur} = require("./display/afficheur")
 
 
 const IP = process.env.IP || "127.0.0.1";
@@ -26,7 +26,7 @@ const ACCESS_TOKEN_LIFE = 1200;
 
 
 function login(data,res) {
-    console.log("login");
+
     console.log('Username:',data.username,'Passwd:',data.password,'dest:',data.destinataire);
 
 
@@ -63,6 +63,7 @@ function login(data,res) {
 
 
 function postdata(data,res,channel,queue) {
+
     console.log("Post Data",data);
     // Check JWT validity
     let validation = validate(data,schemas.postdata_schema);
@@ -76,8 +77,8 @@ function postdata(data,res,channel,queue) {
                     // Ok no problem: Adding data
                     res.writeHead(201, {'Content-Type': 'application/json'});
                     res.end(JSON.stringify({"error":0,"message":"data added"}));
-                    console.log(decoded);
-                    sendData(JSON.stringify(decoded),channel,queue);
+
+                    sendData(decoded,data,channel,queue);
                 }
             });
     } else {
@@ -105,10 +106,14 @@ function bail(err) {
     process.exit(1);
 }
 
-function sendData(data,channel,queue) {
+function sendData(client,data,channel,queue) {
 
-            channel.sendToQueue(queue, Buffer.from(data));
-            console.log(" [x] Sent %s", data);
+            channel.sendToQueue(queue, Buffer.from(JSON.stringify({
+                username : client.username,
+                destinataire : client.destinataire,
+                data : data.data.complexdata
+            })));
+            console.log(" Backend send the following message into \"from_backend\" queues %s", data);
 
 }
 
@@ -118,19 +123,19 @@ function runExpress(channel,queue) {
 
     app.post('/pushdata', (req, res) => {
         var body = req.body;
-        console.log(body);
+        //console.log(body);
         postdata(body,res,channel,queue);
 
     });
 
     app.post("/login", (req, res) => {
         var body = req.body;
-        console.log(body);
+        //console.log(body);
         login(body,res);
     });
 
     app.get('/*', (req, res) => {
-        console.log("GET 404", req.originalUrl);
+        //console.log("GET 404", req.originalUrl);
         f404(null,res);
     });
     app.post('/*', (req, res) => {
@@ -166,6 +171,8 @@ function run(){
             if (err != null) bail(err);
             consumer(conn);
             routeur(conn,"from_backend");
+            afficheur(conn);
+
         });
 
 }
